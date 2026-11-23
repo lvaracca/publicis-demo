@@ -98,3 +98,11 @@ resource "google_bigquery_dataset_iam_member" "talk_to_data_gold_viewer" {
   role       = "roles/bigquery.dataViewer"
   member     = "serviceAccount:${google_service_account.talk_to_data_gold.email}"
 }
+
+# Table-level viewer sur ref.ref_clients_rls uniquement (requis par BigQuery RLS subquery, zéro accès bronze/silver)
+resource "google_bigquery_table_iam_member" "talk_to_data_rls_lookup" {
+  dataset_id = google_bigquery_dataset.layers["ref"].dataset_id
+  table_id   = "ref_clients_rls"
+  role       = "roles/bigquery.dataViewer"
+  member     = "serviceAccount:${google_service_account.talk_to_data_gold.email}"
+}

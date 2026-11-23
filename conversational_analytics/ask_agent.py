@@ -43,6 +43,7 @@ def ask(question: str) -> None:
 
     generated_sqls: list[str] = []
     final_parts: list[str] = []
+    suggestions: list[str] = []
 
     for chunk in client.chat(request=request):
         sys_msg = chunk.system_message
@@ -50,31 +51,40 @@ def ask(question: str) -> None:
             continue
 
         # Capture le SQL généré par Conversational Analytics
-        if getattr(sys_msg, "data", None):
-            data_msg = sys_msg.data
-            if getattr(data_msg, "generated_sql", None):
-                generated_sqls.append(data_msg.generated_sql)
+        data_msg = getattr(sys_msg, "data", None)
+        if data_msg:
+            sql_candidate = getattr(data_msg, "generated_sql", None)
+            if sql_candidate and sql_candidate.strip():
+                generated_sqls.append(sql_candidate.strip())
 
-        # Capture les blocs texte (en séparant les pensées de la réponse finale)
-        if getattr(sys_msg, "text", None) and sys_msg.text.parts:
-            raw_type = getattr(sys_msg.text, "text_type", None)
+        # Capture les blocs texte (en séparant les pensées, suggestions et réponse finale)
+        text_msg = getattr(sys_msg, "text", None)
+        if text_msg and text_msg.parts:
+            raw_type = getattr(text_msg, "text_type", None)
             type_name = getattr(raw_type, "name", str(raw_type))
-            text = "".join(sys_msg.text.parts)
-            if "THOUGHT" in type_name:
+            if "THOUGHT" in type_name or "PROGRESS" in type_name:
                 continue
-            elif "FINAL_RESPONSE" in type_name or type_name == "2":
-                final_parts.append(text)
-            elif "PROGRESS" not in type_name and text.strip():
-                final_parts.append(text)
+            elif "UNSPECIFIED" in type_name or raw_type == 0:
+                for part in text_msg.parts:
+                    if part and part.strip():
+                        suggestions.append(part.strip())
+            else:
+                text = "\n\n".join(p.strip() for p in text_msg.parts if p and p.strip())
+                if text:
+                    final_parts.append(text)
 
     if generated_sqls:
         print("\n[SQL généré par Conversational Analytics (Couche Gold uniquement)]")
         for sql in generated_sqls:
-            print(sql.strip())
+            print(sql)
             print()
 
     print("[Réponse Conversational Analytics]")
-    print("".join(final_parts).strip())
+    print("\n\n".join(final_parts).strip())
+    if suggestions:
+        print("\n[Questions de suivi suggérées]")
+        for s in suggestions:
+            print(f"  • {s}")
     print("-" * 72)
 
 
