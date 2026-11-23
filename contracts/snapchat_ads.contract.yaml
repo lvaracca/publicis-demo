@@ -1,0 +1,94 @@
+apiVersion: v3.0.1
+kind: DataContract
+id: urn:publicis:social:snapchat_ads:v1
+version: "1.0.0"
+status: active
+domain: social
+dataProduct: dp_social_performance
+
+info:
+  title: "Snapchat Ads Raw Ingestion Contract"
+  description: "Contrat d'ingestion Adverity -> GCS -> BigQuery Bronze pour Snapchat Ads. Profilé depuis l'échantillon CSV du 2026-11-23."
+  owner: "team-data-engineering@publicismedia.fr"
+  steward: "paid-social-ops@publicismedia.fr"
+  sourceSystem: "Adverity (Snapchat Marketing API)"
+
+servers:
+  landing:
+    type: gcs
+    location: "gs://publicis-demo-515613-landing/adverity/snapchat_ads/"
+    format: csv
+  bronze:
+    type: bigquery
+    project: publicis-demo-515613
+    dataset: bronze
+    table: "brz_snapchat_ads"
+    location: europe-west1
+
+ingestion:
+  writeDisposition: WRITE_APPEND_MERGE
+  partitionBy: report_date
+  clusterBy: [client_id, campaign_id]
+  requirePartitionFilter: true
+  schemaEvolutionPolicy: STRICT_CONTRACT_CHECK
+
+sla:
+  freshnessHours: 24
+  deliveryTimeCET: "07:00"
+  availabilityTarget: "99.5%"
+
+security:
+  piiDetected: false
+  dlpClassification: INTERNAL_MEDIA_METRICS
+  accessControl: "Keyless IAM - Data Engineering SA only (NO direct agent/BI access)"
+
+finops:
+  costCenter: publicis_media_fr
+  gcsNearlineDays: 90
+  gcsDeleteDays: 365
+  bqPartitionExpirationDays: 730
+  labels:
+    env: dev
+    domain: social
+    source: snapchat_ads
+    managed_by: terraform
+
+schema:
+  primaryKey: [report_date, account_id, campaign_id, ad_squad_id]
+  columns:
+    - { name: report_date, type: DATE, nullable: false, description: "Date de diffusion quotidienne" }
+    - { name: client_id, type: STRING, nullable: false, description: "Identifiant annonceur Publicis" }
+    - { name: account_id, type: STRING, nullable: false, description: "ID compte publicitaire Snapchat" }
+    - { name: account_name, type: STRING, nullable: false, description: "Nom du compte Snapchat" }
+    - { name: campaign_id, type: STRING, nullable: false, description: "ID campagne Snapchat" }
+    - { name: campaign_name, type: STRING, nullable: false, description: "Nom campagne (taxonomie Publicis)" }
+    - { name: campaign_objective, type: STRING, nullable: false, description: "Objectif campagne (AWARENESS, TRAFFIC, CONVERSION)" }
+    - { name: campaign_status, type: STRING, nullable: false, description: "Statut campagne (ACTIVE, PAUSED)" }
+    - { name: ad_squad_id, type: STRING, nullable: false, description: "ID Ad Squad (équivalent Ad Set)" }
+    - { name: ad_squad_name, type: STRING, nullable: false, description: "Nom Ad Squad" }
+    - { name: currency, type: STRING, nullable: false, description: "Devise source (USD -> conversion EUR en Silver)" }
+    - { name: spend_micro, type: INT64, nullable: false, description: "Dépense en micro-devises (diviser par 1 000 000)" }
+    - { name: impressions, type: INT64, nullable: false, description: "Nombre d'impressions" }
+    - { name: swipes, type: INT64, nullable: false, description: "Nombre de swipes (mappé sur clicks en Silver)" }
+    - { name: video_views, type: INT64, nullable: true, description: "Nombre de vues vidéo" }
+    - { name: purchases, type: INT64, nullable: true, description: "Nombre d'achats (mappé sur conversions en Silver)" }
+    - { name: _ingested_at, type: TIMESTAMP, nullable: false, description: "Horodatage technique d'ingestion Bronze" }
+    - { name: _source_file, type: STRING, nullable: false, description: "URI GCS du fichier source Adverity" }
+
+qualityRules:
+  - id: dq_no_duplicates
+    type: uniqueness
+    columns: [report_date, account_id, campaign_id, ad_squad_id]
+    severity: ERROR
+  - id: dq_freshness
+    type: freshness
+    maxAgeHours: 24
+    severity: WARN
+  - id: dq_spend_non_negative
+    type: expression
+    expression: "spend_micro >= 0"
+    severity: ERROR
+  - id: dq_no_swipes_without_impressions
+    type: expression
+    expression: "NOT (impressions = 0 AND swipes > 0)"
+    severity: WARN
