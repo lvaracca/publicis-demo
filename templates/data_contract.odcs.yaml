@@ -1,0 +1,85 @@
+# Template Data Contract — Open Data Contract Standard (ODCS v3)
+# Usage : Copier ce template pour tout nouvel onboarding de source Adverity -> GCS -> BigQuery
+apiVersion: v3.0.1
+kind: DataContract
+id: urn:publicis:social:<SOURCE_NAME>:v1
+version: "1.0.0"
+status: draft # draft | active | deprecated
+domain: social
+dataProduct: dp_social_performance
+
+info:
+  title: "<SOURCE_TITLE> Raw Ingestion Contract"
+  description: "Contrat d'ingestion Adverity -> GCS -> BigQuery Bronze pour <SOURCE_TITLE>."
+  owner: "team-data-engineering@publicismedia.fr"
+  steward: "paid-social-ops@publicismedia.fr"
+  sourceSystem: "Adverity (<SOURCE_TITLE> API)"
+
+servers:
+  landing:
+    type: gcs
+    location: "gs://publicis-demo-515613-landing/adverity/<SOURCE_NAME>/"
+    format: csv
+  bronze:
+    type: bigquery
+    project: publicis-demo-515613
+    dataset: bronze
+    table: "brz_<SOURCE_NAME>"
+    location: europe-west1
+
+ingestion:
+  writeDisposition: WRITE_APPEND_MERGE # Idempotent partition overwrite / MERGE sur primaryKey
+  partitionBy: report_date
+  clusterBy:
+    - client_id
+    - campaign_id
+  requirePartitionFilter: true
+  schemaEvolutionPolicy: STRICT_CONTRACT_CHECK # Bloquer en CI/CD tout breaking change, PR requise sur ajout colonne
+
+sla:
+  freshnessHours: 24
+  deliveryTimeCET: "07:00"
+  availabilityTarget: "99.5%"
+
+security:
+  piiDetected: false
+  dlpClassification: INTERNAL_MEDIA_METRICS
+  accessControl: "Keyless IAM - Data Engineering SA only (NO direct agent/BI access)"
+
+finops:
+  costCenter: publicis_media_fr
+  gcsNearlineDays: 90
+  gcsDeleteDays: 365
+  bqPartitionExpirationDays: 730
+  labels:
+    env: dev
+    domain: social
+    source: "<SOURCE_NAME>"
+    managed_by: terraform
+
+schema:
+  primaryKey:
+    - report_date
+    - account_id
+    - campaign_id
+    - adset_id
+  columns:
+    - name: report_date
+      type: DATE
+      nullable: false
+      description: "Date de diffusion (UTC/Europe Paris)"
+    # Compléter automatiquement lors du profiling de l'échantillon CSV
+
+qualityRules:
+  - id: dq_no_duplicates
+    type: uniqueness
+    columns: [report_date, account_id, campaign_id, adset_id]
+    severity: ERROR
+  - id: dq_freshness
+    type: freshness
+    maxAgeHours: 24
+    severity: WARN
+  - id: dq_spend_non_negative
+    type: expression
+    expression: "spend >= 0"
+    severity: ERROR

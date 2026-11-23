@@ -1,0 +1,34 @@
+version: 2
+
+sources:
+  - name: ref
+    database: publicis-demo-515613
+    schema: ref
+    description: "Référentiels canoniques versionnés Publicis Media France"
+    tables:
+      - name: ref_fx_rates
+        description: "Taux de change quotidiens vers EUR"
+      - name: ref_media_taxonomy
+        description: "Référentiel de taxonomie média (marques, objectifs, funnels)"
+      - name: ref_clients_rls
+        description: "Table de configuration Row-Level Security par client"
+
+  - name: bronze
+    database: publicis-demo-515613
+    schema: bronze
+    description: "Couche Bronze brute ingérée depuis Adverity (GCS -> BigQuery)"
+    tables:
+      - name: brz_meta_ads
+        description: "Données brutes Meta Ads (Facebook / Instagram)"
+        loaded_at_field: _ingested_at
+        freshness:
+          warn_after: { count: 24, period: hour }
+          error_after: { count: 48, period: hour }
+          filter: "report_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)"
+      - name: brz_tiktok_ads
+        description: "Données brutes TikTok Ads"
+        loaded_at_field: _ingested_at
+        freshness:
+          warn_after: { count: 24, period: hour }
+          error_after: { count: 48, period: hour }
+          filter: "report_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)"

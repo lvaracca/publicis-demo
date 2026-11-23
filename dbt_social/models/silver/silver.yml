@@ -1,0 +1,85 @@
+version: 2
+
+models:
+  - name: dim_account
+    description: "Dimension conforme des comptes publicitaires Social Media (Meta, TikTok, ...)."
+    columns:
+      - name: account_sk
+        description: "Clé de substitution unique du compte (platform + account_id)."
+        tests:
+          - not_null
+          - unique
+      - name: client_id
+        description: "Identifiant annonceur Publicis Media France."
+        tests:
+          - not_null
+
+  - name: dim_campaign_scd2
+    description: "Dimension conforme des campagnes Social en SCD Type 2 (historisation des changements de nom, objectif et statut)."
+    columns:
+      - name: campaign_scd_sk
+        description: "Clé de substitution versionnée (platform + campaign_id + scd_version)."
+        tests:
+          - not_null
+          - unique
+      - name: campaign_id
+        description: "Identifiant natif de la campagne sur la plateforme."
+        tests:
+          - not_null
+      - name: scd_version
+        description: "Numéro de version SCD2 (1, 2, ...)."
+        tests:
+          - not_null
+      - name: valid_from
+        description: "Date de début de validité de cette version de campagne."
+        tests:
+          - not_null
+      - name: valid_to
+        description: "Date de fin de validité (NULL si version courante)."
+      - name: is_current
+        description: "Indique si la version de la campagne est active."
+        tests:
+          - not_null
+
+  - name: fct_social_performance_daily
+    description: "Table de faits Silver Social Media unifiée, normalisée en EUR et enrichie par la taxonomie Publicis. Grain strict : (date_day, platform, account_id, campaign_id, adset_id)."
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns:
+            - date_day
+            - platform
+            - account_id
+            - campaign_id
+            - adset_id
+    columns:
+      - name: social_perf_sk
+        description: "Clé de substitution déterministe du grain Silver."
+        tests:
+          - not_null
+          - unique
+      - name: date_day
+        description: "Date de diffusion quotidienne (partition BigQuery)."
+        tests:
+          - not_null
+      - name: platform
+        description: "Plateforme Paid Social normalisée (meta, tiktok, snapchat)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['meta', 'tiktok', 'snapchat']
+      - name: client_id
+        description: "Identifiant annonceur Publicis (clé de clustering & RLS)."
+        tests:
+          - not_null
+      - name: spend_eur
+        description: "Dépense média convertie en EUR via ref.ref_fx_rates."
+        tests:
+          - not_null
+      - name: impressions
+        description: "Nombre d'impressions publicitaires."
+        tests:
+          - not_null
+      - name: clicks
+        description: "Nombre de clics unifiés (Meta link_clicks, TikTok clicks, Snapchat swipes)."
+        tests:
+          - not_null

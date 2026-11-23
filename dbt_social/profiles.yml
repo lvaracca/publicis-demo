@@ -1,0 +1,31 @@
+publicis_social_platform:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: publicis-demo-515613
+      dataset: silver
+      location: europe-west1
+      threads: 4
+      priority: interactive
+      job_execution_timeout_seconds: 300
+      labels:
+        datacloud: antigravity
+        env: dev
+        domain: social
+        managed_by: dbt
+    prod:
+      type: bigquery
+      method: oauth
+      project: publicis-demo-515613
+      dataset: silver
+      location: europe-west1
+      threads: 8
+      timeout_seconds: 300
+      priority: interactive
+      labels:
+        datacloud: antigravity
+        env: prod
+        domain: social
+        managed_by: dbt

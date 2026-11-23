@@ -1,0 +1,76 @@
+apiVersion: v3.0.1
+kind: DataContract
+id: urn:publicis:social:meta_ads:v1
+version: "1.0.0"
+status: active
+domain: social
+dataProduct: dp_social_performance
+
+info:
+  title: "Meta Ads Raw Ingestion Contract"
+  description: "Contrat d'ingestion Adverity -> GCS -> BigQuery Bronze pour Meta Ads (Facebook / Instagram)."
+  owner: "team-data-engineering@publicismedia.fr"
+  steward: "paid-social-ops@publicismedia.fr"
+  sourceSystem: "Adverity (Meta Marketing API)"
+
+servers:
+  landing:
+    type: gcs
+    location: "gs://publicis-demo-515613-landing/adverity/meta_ads/"
+    format: csv
+  bronze:
+    type: bigquery
+    project: publicis-demo-515613
+    dataset: bronze
+    table: "brz_meta_ads"
+    location: europe-west1
+
+ingestion:
+  writeDisposition: WRITE_APPEND_MERGE
+  partitionBy: report_date
+  clusterBy: [client_id, campaign_id]
+  requirePartitionFilter: true
+  schemaEvolutionPolicy: STRICT_CONTRACT_CHECK
+
+sla:
+  freshnessHours: 24
+  deliveryTimeCET: "06:30"
+  availabilityTarget: "99.5%"
+
+security:
+  piiDetected: false
+  dlpClassification: INTERNAL_MEDIA_METRICS
+  accessControl: "Keyless IAM - Data Engineering SA only"
+
+finops:
+  costCenter: publicis_media_fr
+  gcsNearlineDays: 90
+  gcsDeleteDays: 365
+  bqPartitionExpirationDays: 730
+  labels:
+    env: dev
+    domain: social
+    source: meta_ads
+    managed_by: terraform
+
+schema:
+  primaryKey: [report_date, account_id, campaign_id, adset_id]
+  columns:
+    - { name: report_date, type: DATE, nullable: false }
+    - { name: client_id, type: STRING, nullable: false }
+    - { name: account_id, type: STRING, nullable: false }
+    - { name: account_name, type: STRING, nullable: false }
+    - { name: campaign_id, type: STRING, nullable: false }
+    - { name: campaign_name, type: STRING, nullable: false }
+    - { name: campaign_objective, type: STRING, nullable: false }
+    - { name: campaign_status, type: STRING, nullable: false }
+    - { name: adset_id, type: STRING, nullable: false }
+    - { name: adset_name, type: STRING, nullable: false }
+    - { name: currency, type: STRING, nullable: false }
+    - { name: spend, type: FLOAT64, nullable: false }
+    - { name: impressions, type: INT64, nullable: false }
+    - { name: link_clicks, type: INT64, nullable: false }
+    - { name: video_views, type: INT64, nullable: true }
+    - { name: conversions, type: INT64, nullable: true }
+    - { name: _ingested_at, type: TIMESTAMP, nullable: false }
+    - { name: _source_file, type: STRING, nullable: false }

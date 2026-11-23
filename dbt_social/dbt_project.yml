@@ -1,0 +1,38 @@
+name: 'publicis_social_platform'
+version: '1.0.0'
+config-version: 2
+
+profile: 'publicis_social_platform'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  publicis_social_platform:
+    +persist_docs:
+      relation: true
+      columns: true
+    staging:
+      +schema: silver
+      +materialized: view
+    silver:
+      +schema: silver
+      +materialized: table
+    gold:
+      +schema: gold
+      +materialized: table
+    dq_monitoring:
+      +schema: dq_monitoring
+      +materialized: table
+
+snapshots:
+  publicis_social_platform:
+    +target_schema: silver

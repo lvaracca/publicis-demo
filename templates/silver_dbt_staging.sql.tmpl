@@ -1,0 +1,69 @@
+{{
+  config(
+    materialized = 'view',
+    labels = {
+      'env': target.name,
+      'domain': 'social',
+      'source': '<SOURCE_NAME>',
+      'managed_by': 'dbt'
+    }
+  )
+}}
+
+WITH source_raw AS (
+  SELECT
+    -- Column pruning explicite (jamais de SELECT * en production)
+    report_date,
+    client_id,
+    account_id,
+    campaign_id,
+    campaign_name,
+    adset_id,
+    adset_name,
+    currency,
+    spend_local,
+    impressions,
+    clicks,
+    conversions,
+    _ingested_at,
+    _source_file
+  FROM {{ source('bronze', 'brz_<SOURCE_NAME>') }}
+  WHERE report_date IS NOT NULL
+),
+
+deduplicated AS (
+  -- Déduplication stricte sur la clé naturelle avant Silver
+  SELECT *
+  FROM source_raw
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY report_date, account_id, campaign_id, adset_id
+    ORDER BY _ingested_at DESC
+  ) = 1
+),
+
+enriched AS (
+  SELECT
+    d.report_date AS date_day,
+    '<PLATFORM_NAME>' AS platform,
+    d.client_id,
+    d.account_id,
+    d.campaign_id,
+    d.campaign_name,
+    d.adset_id,
+    d.adset_name,
+    d.currency AS source_currency,
+    d.spend_local,
+    ROUND(d.spend_local * COALESCE(fx.rate_to_eur, 1.0), 4) AS spend_eur,
+    d.impressions,
+    d.clicks,
+    d.conversions,
+    {{ parse_media_taxonomy('d.campaign_name') }},
+    d._ingested_at,
+    d._source_file
+  FROM deduplicated AS d
+  LEFT JOIN {{ source('ref', 'ref_fx_rates') }} AS fx
+    ON d.report_date = fx.rate_date
+    AND d.currency = fx.currency_code
+)
+
+SELECT * FROM enriched

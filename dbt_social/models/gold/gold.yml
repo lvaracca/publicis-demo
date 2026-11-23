@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: dp_social_performance
+    description: >
+      Data Product certifié Gold (Publicis Media France) — Performance quotidienne Paid Social multi-plateformes (Meta, TikTok, Snapchat).
+      Protégé par Row-Level Security par client_id.
+      Définition officielle des KPI :
+      CTR (Taux de clic) = SAFE_DIVIDE(SUM(clicks), SUM(impressions)) (JAMAIS AVG).
+      CPM EUR = SAFE_DIVIDE(SUM(spend_eur), SUM(impressions)) * 1000.
+      CPC EUR = SAFE_DIVIDE(SUM(spend_eur), SUM(clicks)).
+    columns:
+      - name: date_day
+        description: "Date de diffusion quotidienne (YYYY-MM-DD)."
+        tests:
+          - not_null
+      - name: client_id
+        description: "Identifiant technique de l'annonceur (maison_eclat, autonova_fr). Protégé par RLS."
+        tests:
+          - not_null
+      - name: client_name
+        description: "Nom lisible de l'annonceur (Maison Éclat, AutoNova France)."
+      - name: platform
+        description: "Plateforme Social Media : meta, tiktok, snapchat."
+        tests:
+          - not_null
+      - name: campaign_id
+        description: "Identifiant unique de la campagne."
+      - name: campaign_name
+        description: "Nom de la campagne selon la taxonomie Publicis."
+      - name: campaign_objective
+        description: "Objectif média de la campagne (AWARENESS, TRAFFIC, CONVERSION), historisé en SCD2."
+      - name: campaign_scd_version
+        description: "Version SCD2 de la campagne active à la date_day."
+      - name: brand_name
+        description: "Nom commercial de la marque annonceur (issu de la taxonomie)."
+      - name: funnel_stage
+        description: "Étape du funnel marketing : UPPER, MID, LOWER, UNKNOWN."
+      - name: spend_eur
+        description: "Dépense média en Euros (EUR). Additive : utiliser SUM(spend_eur)."
+        tests:
+          - not_null
+      - name: impressions
+        description: "Nombre d'impressions publicitaires. Additive : utiliser SUM(impressions). Dénominateur du CTR."
+        tests:
+          - not_null
+      - name: clicks
+        description: "Nombre de clics/swipes normalisés. Additive : utiliser SUM(clicks). Numérateur du CTR = SAFE_DIVIDE(SUM(clicks), SUM(impressions))."
+        tests:
+          - not_null
+      - name: video_views
+        description: "Nombre de vues vidéo."
+      - name: conversions
+        description: "Nombre de conversions/achats attribués."

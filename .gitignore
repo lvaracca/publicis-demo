@@ -1,0 +1,26 @@
+# Python & Virtualenv
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# dbt artifacts (compiled locally)
+dbt_social/target/
+dbt_social/dbt_packages/
+dbt_social/logs/
+
+# Generated local CSVs (uploaded to GCS)
+data/
+
+# Terraform local state
+**/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# OS & IDE
+.DS_Store
+.vscode/.ropeproject
+
+# Internal prep notes (not part of client repo)
+context.MD
