@@ -1,7 +1,7 @@
 apiVersion: v3.0.1
 kind: DataContract
 id: urn:publicis:social:snapchat_ads:v1
-version: "1.0.0"
+version: "1.1.0"
 status: active
 domain: social
 dataProduct: dp_social_performance
@@ -72,6 +72,7 @@ schema:
     - { name: swipes, type: INT64, nullable: false, description: "Nombre de swipes (mappé sur clicks en Silver)" }
     - { name: video_views, type: INT64, nullable: true, description: "Nombre de vues vidéo" }
     - { name: purchases, type: INT64, nullable: true, description: "Nombre d'achats (mappé sur conversions en Silver)" }
+    - { name: view_through_conversions, type: INT64, nullable: true, description: "Conversions post-view ajoutées en v1.1.0 (additive non-breaking)" }
     - { name: _ingested_at, type: TIMESTAMP, nullable: false, description: "Horodatage technique d'ingestion Bronze" }
     - { name: _source_file, type: STRING, nullable: false, description: "URI GCS du fichier source Adverity" }
 

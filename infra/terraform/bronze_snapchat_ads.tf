@@ -41,6 +41,7 @@ resource "google_bigquery_table" "brz_snapchat_ads" {
     { name = "swipes", type = "INT64", mode = "REQUIRED" },
     { name = "video_views", type = "INT64", mode = "NULLABLE" },
     { name = "purchases", type = "INT64", mode = "NULLABLE" },
+    { name = "view_through_conversions", type = "INT64", mode = "NULLABLE" },
     { name = "_ingested_at", type = "TIMESTAMP", mode = "REQUIRED" },
     { name = "_source_file", type = "STRING", mode = "REQUIRED" }
   ])
