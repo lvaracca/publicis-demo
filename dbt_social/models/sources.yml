@@ -32,3 +32,10 @@ sources:
           warn_after: { count: 24, period: hour }
           error_after: { count: 48, period: hour }
           filter: "report_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)"
+      - name: brz_snapchat_ads
+        description: "Données brutes Snapchat Ads (spend en micro-devises USD, swipes -> clicks)"
+        loaded_at_field: _ingested_at
+        freshness:
+          warn_after: { count: 24, period: hour }
+          error_after: { count: 48, period: hour }
+          filter: "report_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)"

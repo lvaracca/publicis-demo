@@ -30,6 +30,13 @@ WITH unioned_staging AS (
   {% if is_incremental() %}
     WHERE date_day >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
   {% endif %}
+
+  UNION ALL
+
+  SELECT * FROM {{ ref('stg_snapchat_ads') }}
+  {% if is_incremental() %}
+    WHERE date_day >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+  {% endif %}
 ),
 
 joined_scd AS (

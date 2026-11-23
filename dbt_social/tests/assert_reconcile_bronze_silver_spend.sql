@@ -29,10 +29,26 @@ bronze_tiktok AS (
     ON d.report_date = fx.rate_date AND d.currency = fx.currency_code
 ),
 
+bronze_snapchat AS (
+  SELECT
+    'snapchat' AS platform,
+    ROUND(SUM((CAST(d.spend_micro AS FLOAT64) / 1000000.0) * COALESCE(fx.rate_to_eur, 1.0)), 2) AS bronze_spend_eur
+  FROM (
+    SELECT report_date, account_id, campaign_id, ad_squad_id, currency, spend_micro
+    FROM {{ source('bronze', 'brz_snapchat_ads') }}
+    WHERE report_date >= DATE('2020-01-01')
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY report_date, account_id, campaign_id, ad_squad_id ORDER BY _ingested_at DESC) = 1
+  ) AS d
+  LEFT JOIN {{ source('ref', 'ref_fx_rates') }} AS fx
+    ON d.report_date = fx.rate_date AND d.currency = fx.currency_code
+),
+
 bronze_totals AS (
   SELECT * FROM bronze_meta
   UNION ALL
   SELECT * FROM bronze_tiktok
+  UNION ALL
+  SELECT * FROM bronze_snapchat
 ),
 
 silver_totals AS (

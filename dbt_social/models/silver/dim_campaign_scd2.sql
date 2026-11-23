@@ -30,6 +30,14 @@ WITH daily_campaigns AS (
     campaign_name, campaign_objective, campaign_status,
     taxo_brand, taxo_objective, taxo_funnel, is_taxonomy_valid
   FROM {{ ref('stg_tiktok_ads') }}
+
+  UNION ALL
+
+  SELECT DISTINCT
+    date_day, platform, client_id, account_id, campaign_id,
+    campaign_name, campaign_objective, campaign_status,
+    taxo_brand, taxo_objective, taxo_funnel, is_taxonomy_valid
+  FROM {{ ref('stg_snapchat_ads') }}
 ),
 
 with_changes AS (

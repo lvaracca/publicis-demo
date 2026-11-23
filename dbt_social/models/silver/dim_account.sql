@@ -20,6 +20,12 @@ WITH unioned AS (
   SELECT platform, client_id, account_id, account_name, MAX(date_day) AS last_seen_date
   FROM {{ ref('stg_tiktok_ads') }}
   GROUP BY 1, 2, 3, 4
+
+  UNION ALL
+
+  SELECT platform, client_id, account_id, account_name, MAX(date_day) AS last_seen_date
+  FROM {{ ref('stg_snapchat_ads') }}
+  GROUP BY 1, 2, 3, 4
 )
 
 SELECT
