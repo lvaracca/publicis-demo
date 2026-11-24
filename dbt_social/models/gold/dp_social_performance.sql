@@ -16,7 +16,7 @@
       'managed_by': 'dbt'
     },
     post_hook = [
-      "CREATE OR REPLACE ROW ACCESS POLICY rls_client_isolation ON {{ this }} GRANT TO ('user:admin@lvaracca.altostrat.com', 'user:lvaracca@gcp.altostrat.com', 'serviceAccount:sa-talk-to-data-gold@publicis-demo-515613.iam.gserviceaccount.com') FILTER USING (client_id IN (SELECT client_id FROM `publicis-demo-515613.ref.ref_clients_rls` WHERE user_principal = SESSION_USER() AND is_active = TRUE))"
+      "CREATE OR REPLACE ROW ACCESS POLICY rls_client_isolation ON {{ this }} GRANT TO ('user:admin@lvaracca.altostrat.com', 'user:lvaracca@gcp.altostrat.com', 'user:nicolas@lvaracca.altostrat.com', 'serviceAccount:sa-talk-to-data-gold@publicis-demo-515613.iam.gserviceaccount.com') FILTER USING (client_id IN (SELECT client_id FROM `publicis-demo-515613.ref.ref_clients_rls` WHERE user_principal = SESSION_USER() AND is_active = TRUE))"
     ]
   )
 }}

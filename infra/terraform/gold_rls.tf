@@ -13,6 +13,7 @@ resource "google_bigquery_job" "apply_gold_rls" {
       GRANT TO (
         "user:admin@lvaracca.altostrat.com",
         "user:lvaracca@gcp.altostrat.com",
+        "user:nicolas@lvaracca.altostrat.com",
         "serviceAccount:sa-talk-to-data-gold@${var.project_id}.iam.gserviceaccount.com"
       )
       FILTER USING (

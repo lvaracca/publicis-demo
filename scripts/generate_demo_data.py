@@ -112,6 +112,18 @@ def generate_ref_tables(rng: random.Random) -> dict[str, tuple[list[str], list[d
         },
         {
             "client_id": "maison_eclat",
+            "user_principal": "nicolas@lvaracca.altostrat.com",
+            "role_scope": "agency_admin",
+            "is_active": True,
+        },
+        {
+            "client_id": "autonova_fr",
+            "user_principal": "nicolas@lvaracca.altostrat.com",
+            "role_scope": "agency_admin",
+            "is_active": True,
+        },
+        {
+            "client_id": "maison_eclat",
             "user_principal": f"sa-talk-to-data-gold@{PROJECT_ID}.iam.gserviceaccount.com",
             "role_scope": "client_scoped_agent",
             "is_active": True,
