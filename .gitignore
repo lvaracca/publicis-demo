@@ -22,6 +22,8 @@ data/
 .DS_Store
 .vscode/.ropeproject
 
-# Internal prep notes (not part of client repo)
+# Internal prep notes (not part of public repo)
 context.MD
 paul_kit/
+DEMO_SCRIPT*.md
+HANDOVER_*.md
