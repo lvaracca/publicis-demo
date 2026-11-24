@@ -1,6 +1,6 @@
 {{ config(severity = 'warn') }}
 
--- Contrôle Data Quality : détecte les campagnes ne respectant pas la taxonomie Publicis (6 segments)
+-- Data Quality Check: flags campaigns violating the Publicis canonical taxonomy (6 tokens)
 SELECT DISTINCT
   platform,
   client_id,

@@ -1,34 +1,34 @@
-# Publicis Media France — Context Set Sémantique (Social Data Product)
+# Publicis Media France — Semantic Context Set (Social Data Product)
 
-Ce dossier formalise le **Context Set** (inspiré Open Knowledge Format / Dataplex Knowledge Catalog) associé au Data Product certifié `publicis-demo-515613.gold.dp_social_performance`.
+This folder defines the **Semantic Context Set** (Open Knowledge Format / Dataplex Knowledge Catalog style) attached to the certified Data Product `publicis-demo-515613.gold.dp_social_performance`.
 
-Il constitue la **source de vérité unique** pour les définitions KPI partagées entre :
-1. **Looker Studio** (couche BI)
-2. **Conversational Analytics** (`publicis-social-gold-agent`, couche Talk-to-Data)
-3. **Antigravity / Data Agent Kit** (lineage et investigations qualité)
+It serves as the **single source of truth** for KPI definitions shared across:
+1. **Looker Studio** (BI serving layer)
+2. **Conversational Analytics** (`publicis-social-gold-agent`, Talk-to-Data layer)
+3. **Antigravity / Data Agent Kit** (column-level lineage and quality investigations)
 
-## Règles de Gouvernance
-- **Owner** : `team-data-engineering@publicismedia.fr`
-- **Data Steward** : `paid-social-ops@publicismedia.fr`
-- **SLA de fraîcheur** : quotidien avant 07h00 CET (max 24h)
-- **Sécurité / Isolation** : Row-Level Security BigQuery active (`rls_client_isolation`) pilotée par `ref.ref_clients_rls`.
-- **Règle d'Agentification** : les agents métier lisent **exclusivement** `gold.dp_social_performance` et n'ont aucun droit IAM sur `bronze.*` ni `silver.*`.
+## Governance Rules
+- **Owner**: `team-data-engineering@publicismedia.fr`
+- **Data Steward**: `paid-social-ops@publicismedia.fr`
+- **Freshness SLA**: daily by 07:00 CET (max 24 hours)
+- **Security / Client Isolation**: BigQuery Row-Level Security (`rls_client_isolation`) driven by `ref.ref_clients_rls`.
+- **Agentification Rule**: business agents query `gold.dp_social_performance` **exclusively** and have zero IAM permissions on `bronze.*` or `silver.*`.
 
-## Glossaire des KPI Canoniques (Définis une seule fois)
+## Canonical KPI Glossary (Defined Once, Served Everywhere)
 
-| KPI | Formule SQL BigQuery (Canonique) | Erreur interdite | Unité |
+| KPI | Canonical BigQuery SQL Formula | Forbidden Anti-Pattern | Unit |
 | :--- | :--- | :--- | :--- |
-| **CTR** (Taux de clic) | `SAFE_DIVIDE(SUM(clicks), SUM(impressions))` | ❌ JAMAIS `AVG(ctr)` | Ratio (`%`, ex. `1,84 %`) |
-| **Spend EUR** (Investissement) | `SUM(spend_eur)` | Ne pas mélanger `spend_local` | EUR (`€`) |
-| **CPM EUR** (Coût pour mille) | `SAFE_DIVIDE(SUM(spend_eur), SUM(impressions)) * 1000` | ❌ JAMAIS `AVG(cpm)` | EUR (`€`) |
-| **CPC EUR** (Coût par clic) | `SAFE_DIVIDE(SUM(spend_eur), SUM(clicks))` | ❌ JAMAIS `AVG(cpc)` | EUR (`€`) |
-| **CVR** (Taux de conversion) | `SAFE_DIVIDE(SUM(conversions), SUM(clicks))` | ❌ JAMAIS `AVG(cvr)` | Ratio (`%`) |
-| **CPA EUR** (Coût par acquisition) | `SAFE_DIVIDE(SUM(spend_eur), SUM(conversions))` | ❌ JAMAIS `AVG(cpa)` | EUR (`€`) |
+| **CTR** (Click-Through Rate) | `SAFE_DIVIDE(SUM(clicks), SUM(impressions))` | ❌ NEVER `AVG(ctr)` | Ratio (`%`, e.g., `2.05%`) |
+| **Spend EUR** (Media Spend) | `SUM(spend_eur)` | Do not mix `spend_local` | EUR (`€`) |
+| **CPM EUR** (Cost per Mille) | `SAFE_DIVIDE(SUM(spend_eur), SUM(impressions)) * 1000` | ❌ NEVER `AVG(cpm)` | EUR (`€`) |
+| **CPC EUR** (Cost per Click) | `SAFE_DIVIDE(SUM(spend_eur), SUM(clicks))` | ❌ NEVER `AVG(cpc)` | EUR (`€`) |
+| **CVR** (Conversion Rate) | `SAFE_DIVIDE(SUM(conversions), SUM(clicks))` | ❌ NEVER `AVG(cvr)` | Ratio (`%`) |
+| **CPA EUR** (Cost per Acquisition) | `SAFE_DIVIDE(SUM(spend_eur), SUM(conversions))` | ❌ NEVER `AVG(cpa)` | EUR (`€`) |
 
-## Règles d'interprétation métier
-- **Plateformes** : `meta` (Meta Ads : Facebook/Instagram), `tiktok` (TikTok Ads), `snapchat` (Snapchat Ads, où `clicks` correspond aux `swipes` normalisés).
-- **Clients pilotes** :
-  - `maison_eclat` (« Maison Éclat », marques : `SERUM`, `PARFUM`)
-  - `autonova_fr` (« AutoNova France », marques : `HYBRID`, `SUVEV`)
-- **Historique Campagne (SCD2)** : une même `campaign_id` peut changer d'objectif (`AWARENESS` → `CONVERSION`) au fil du temps ; la colonne `campaign_scd_version` trace la version active à chaque `date_day`.
-- **Anomalies exclues de Gold** : les lignes incohérentes (`impressions = 0 AND clicks > 0`) sont écartées de `gold.dp_social_performance` et tracées dans `dq_monitoring.dq_social_anomalies`.
+## Business Interpretation Rules
+- **Platforms**: `meta` (Meta Ads: Facebook/Instagram), `tiktok` (TikTok Ads), `snapchat` (Snapchat Ads, where `clicks` maps to normalized `swipes`).
+- **Pilot Clients**:
+  - `maison_eclat` ("Maison Éclat", brands: `SERUM`, `PARFUM`)
+  - `autonova_fr` ("AutoNova France", brands: `HYBRID`, `SUVEV`)
+- **Campaign History (SCD2)**: a single `campaign_id` can change objective (`AWARENESS` → `CONVERSION`) over time; `campaign_scd_version` tracks the active version on each `date_day`.
+- **Anomalies Excluded from Gold**: impossible metric rows (`impressions = 0 AND clicks > 0`) are filtered out of `gold.dp_social_performance` and logged in `dq_monitoring.dq_social_anomalies`.

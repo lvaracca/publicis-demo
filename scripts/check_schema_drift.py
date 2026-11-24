@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Vérifie les écarts de schéma (Schema Drift) entre un fichier CSV déposé sur GCS
-et son Data Contract ODCS v3 (contracts/<source>.contract.yaml).
+Checks schema drift between an incoming CSV file in GCS and its ODCS v3 Data Contract
+(contracts/<source>.contract.yaml).
 
-Classifie automatiquement chaque écart en :
-  - NON-BREAKING (ajout de colonne nullable)
-  - BREAKING (suppression / renommage de colonne obligatoire, modification de clé primaire)
+Automatically classifies drift into:
+  - NON_BREAKING_ADDITIVE (new nullable column added)
+  - BREAKING (required column removed/renamed or primary key modified)
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ PROJECT_ID = "publicis-demo-515613"
 
 def read_gcs_csv_header(gcs_uri: str) -> list[str]:
     if not gcs_uri.startswith("gs://"):
-        raise ValueError(f"URI GCS invalide : {gcs_uri}")
+        raise ValueError(f"Invalid GCS URI: {gcs_uri}")
     bucket_name, blob_path = gcs_uri[5:].split("/", 1)
     client = storage.Client(project=PROJECT_ID)
     blob = client.bucket(bucket_name).blob(blob_path)
@@ -49,13 +49,13 @@ def check_drift(contract_path: Path, gcs_uri: str) -> dict:
 
     if removed:
         severity = "BREAKING"
-        action = "BLOQUER_INGESTION_ET_ALERTER_STEWARD"
+        action = "BLOCK_INGESTION_AND_ALERT_STEWARD"
     elif added:
         severity = "NON_BREAKING_ADDITIVE"
-        action = "PROPOSER_PR_CONTRAT_V1_1_ET_TERRAFORM"
+        action = "PROPOSE_PR_CONTRACT_V1_1_AND_TERRAFORM"
     else:
-        severity = "CONFORME"
-        action = "CONTINUER_INGESTION"
+        severity = "COMPLIANT"
+        action = "PROCEED_WITH_INGESTION"
 
     return {
         "contract": str(contract_path),

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Crée ou met à jour l'agent persistant Google Cloud Conversational Analytics
-(Gemini Data Analytics API) pour Publicis Media France.
+Creates or updates the persistent Google Cloud Conversational Analytics Data Agent
+(Gemini Data Analytics API) for Publicis Media France.
 
-Points clés gouvernance :
-  - Source unique : `publicis-demo-515613.gold.dp_social_performance` (JAMAIS Bronze ni Silver).
-  - Définition canonique du CTR embarquée dans le glossaire et les golden queries :
-      CTR = SAFE_DIVIDE(SUM(clicks), SUM(impressions))  -- JAMAIS AVG(ctr)
-  - Visible directement dans BigQuery Studio -> Conversational Analytics ET interrogeable via API/CLI.
+Key governance guarantees:
+  - Single data source: `publicis-demo-515613.gold.dp_social_performance` (NEVER Bronze or Silver).
+  - Canonical CTR definition embedded in glossary terms and golden queries:
+      CTR = SAFE_DIVIDE(SUM(clicks), SUM(impressions))  -- NEVER AVG(ctr)
+  - Accessible directly in BigQuery Studio -> Conversational Analytics AND via API/CLI.
 """
 
 from __future__ import annotations
@@ -15,29 +15,30 @@ from __future__ import annotations
 import os
 from google.api_core.exceptions import AlreadyExists, NotFound
 from google.cloud import geminidataanalytics_v1beta as gda
+from google.protobuf import field_mask_pb2
 
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "publicis-demo-515613")
 LOCATION = "global"
 AGENT_ID = "publicis-social-gold-agent"
 
-SYSTEM_INSTRUCTION = """Tu es l'assistant analytique certifié Paid Social de Publicis Media France.
-Réponds toujours en français, de manière claire, précise et structurée.
+SYSTEM_INSTRUCTION = """You are the certified Paid Social Analytics Assistant for Publicis Media France.
+Respond in the same language as the user's question (English by default, or French if the user writes in French), in a clear, concise, and structured manner.
 
-RÈGLES DE GOUVERNANCE STRICTES :
-1. Tu interroges EXCLUSIVEMENT le Data Product certifié Gold `publicis-demo-515613.gold.dp_social_performance`.
-   Tu n'as jamais accès aux tables techniques Bronze (`bronze.*`) ni Silver (`silver.*`). Si un utilisateur te demande d'interroger Bronze ou Silver, explique poliment que la politique de gouvernance Publicis interdit aux agents Talk-to-Data de lire les couches techniques.
-2. FORMULES KPI CANONIQUES (définies une seule fois, identiques à Looker Studio) :
-   - CTR (Taux de clic) : TOUJOURS `SAFE_DIVIDE(SUM(clicks), SUM(impressions))` (exprimé en pourcentage avec 2 décimales, ex. 1,84 %). NE JAMAIS utiliser AVG(ctr).
-   - Investissement / Spend : `SUM(spend_eur)` en Euros (€).
-   - CPM EUR : `SAFE_DIVIDE(SUM(spend_eur), SUM(impressions)) * 1000`.
-   - CPC EUR : `SAFE_DIVIDE(SUM(spend_eur), SUM(clicks))`.
-   - Taux de conversion (CVR) : `SAFE_DIVIDE(SUM(conversions), SUM(clicks))`.
-3. Clients pilotes :
-   - `maison_eclat` (Maison Éclat)
-   - `autonova_fr` (AutoNova France)
-4. Plateformes : `meta` (Meta Ads), `tiktok` (TikTok Ads), `snapchat` (Snapchat Ads).
-5. Date de référence la plus récente dans le jeu de données : 2026-11-23. Si l'utilisateur demande « les 7 derniers jours » ou « cette semaine », base-toi sur la date maximale disponible dans la table (`MAX(date_day)`), par exemple `date_day BETWEEN DATE_SUB((SELECT MAX(date_day) FROM ...), INTERVAL 6 DAY) AND (SELECT MAX(date_day) FROM ...)`.
-6. Indique toujours brièvement la période analysée et la formule utilisée pour le CTR afin de garantir la transparence avec les équipes BI.
+STRICT GOVERNANCE RULES:
+1. You query EXCLUSIVELY the certified Gold Data Product `publicis-demo-515613.gold.dp_social_performance`.
+   You NEVER have access to technical Bronze (`bronze.*`) or Silver (`silver.*`) tables. If a user asks to query Bronze or Silver, politely decline and explain that Publicis Media France governance prohibits Talk-to-Data agents from reading technical layers.
+2. CANONICAL KPI FORMULAS (defined once, identical to Looker Studio):
+   - CTR (Click-Through Rate): ALWAYS `SAFE_DIVIDE(SUM(clicks), SUM(impressions))` (formatted as percentage with 2 decimals, e.g., 2.05%). NEVER use AVG(ctr).
+   - Media Spend: `SUM(spend_eur)` in Euros (EUR).
+   - CPM EUR: `SAFE_DIVIDE(SUM(spend_eur), SUM(impressions)) * 1000`.
+   - CPC EUR: `SAFE_DIVIDE(SUM(spend_eur), SUM(clicks))`.
+   - Conversion Rate (CVR): `SAFE_DIVIDE(SUM(conversions), SUM(clicks))`.
+3. Pilot Clients:
+   - `maison_eclat` ("Maison Éclat")
+   - `autonova_fr` ("AutoNova France")
+4. Platforms: `meta` (Meta Ads), `tiktok` (TikTok Ads), `snapchat` (Snapchat Ads).
+5. Latest date in the dataset: 2026-11-23. When a user asks for "the last 7 days" or "this week", anchor relative to `MAX(date_day)` in the table.
+6. Always state the analyzed date range and the canonical CTR formula used to guarantee transparency with BI teams.
 """
 
 
@@ -57,35 +58,35 @@ def build_context() -> gda.Context:
         ),
         glossary_terms=[
             gda.GlossaryTerm(
-                display_name="CTR (Taux de clic)",
-                description="Taux de clic pondéré canonique : SAFE_DIVIDE(SUM(clicks), SUM(impressions)). Ne jamais moyenner des ratios journaliers.",
+                display_name="CTR (Click-Through Rate)",
+                description="Canonical weighted click-through rate: SAFE_DIVIDE(SUM(clicks), SUM(impressions)). Never average daily ratios.",
                 labels=["kpi", "social", "certified"],
             ),
             gda.GlossaryTerm(
                 display_name="Spend EUR",
-                description="Investissement média normalisé en Euros : SUM(spend_eur).",
+                description="Normalized media spend in Euros: SUM(spend_eur).",
                 labels=["kpi", "finops", "certified"],
             ),
             gda.GlossaryTerm(
                 display_name="CPM EUR",
-                description="Coût pour mille impressions en Euros : SAFE_DIVIDE(SUM(spend_eur), SUM(impressions)) * 1000.",
+                description="Cost per mille impressions in Euros: SAFE_DIVIDE(SUM(spend_eur), SUM(impressions)) * 1000.",
                 labels=["kpi", "social", "certified"],
             ),
             gda.GlossaryTerm(
                 display_name="CPC EUR",
-                description="Coût par clic en Euros : SAFE_DIVIDE(SUM(spend_eur), SUM(clicks)).",
+                description="Cost per click in Euros: SAFE_DIVIDE(SUM(spend_eur), SUM(clicks)).",
                 labels=["kpi", "social", "certified"],
             ),
         ],
         example_queries=[
             gda.ExampleQuery(
-                natural_language_question="Quel est le CTR de Maison Éclat par plateforme sur les 30 derniers jours ?",
+                natural_language_question="What is Maison Éclat's CTR by platform over the last 30 days?",
                 sql_query=f"""
 SELECT
   platform,
   SUM(impressions) AS impressions,
   SUM(clicks) AS clicks,
-  ROUND(SAFE_DIVIDE(SUM(spend_eur), 1), 2) AS spend_eur,
+  ROUND(SUM(spend_eur), 2) AS spend_eur,
   ROUND(SAFE_DIVIDE(SUM(clicks), SUM(impressions)) * 100, 2) AS ctr_pct
 FROM `{PROJECT_ID}.gold.dp_social_performance`
 WHERE client_id = 'maison_eclat'
@@ -96,7 +97,7 @@ ORDER BY ctr_pct DESC
 """.strip(),
             ),
             gda.ExampleQuery(
-                natural_language_question="Quel est le CTR quotidien de Maison Éclat sur Snapchat sur les 7 derniers jours ?",
+                natural_language_question="What is Maison Éclat's daily Snapchat CTR over the last 7 days?",
                 sql_query=f"""
 SELECT
   date_day,
@@ -126,11 +127,11 @@ def main() -> None:
 
     agent = gda.DataAgent(
         name=agent_name,
-        display_name="Publicis Social Gold Agent (CTR Certifié)",
+        display_name="Publicis Social Gold Agent (Certified CTR)",
         description=(
-            "Agent Conversational Analytics Publicis Media France. "
-            "Accès restreint au Data Product certifié gold.dp_social_performance "
-            "avec définitions KPI canoniques partagées avec Looker Studio."
+            "Publicis Media France Conversational Analytics Agent. "
+            "Restricted exclusively to certified Data Product gold.dp_social_performance "
+            "with canonical KPI definitions shared with Looker Studio."
         ),
         labels={
             "env": "dev",
@@ -143,15 +144,19 @@ def main() -> None:
         ),
     )
 
+    update_mask = field_mask_pb2.FieldMask(
+        paths=["display_name", "description", "labels", "data_analytics_agent"]
+    )
+
     try:
         client.get_data_agent(name=agent_name)
-        print(f"Mise à jour de l'agent existant : {agent_name}")
+        print(f"Updating existing Data Agent: {agent_name}")
         updated = client.update_data_agent_sync(
-            request=gda.UpdateDataAgentRequest(data_agent=agent)
+            request=gda.UpdateDataAgentRequest(data_agent=agent, update_mask=update_mask)
         )
-        print(f"Agent mis à jour : {updated.name}")
+        print(f"Data Agent updated: {updated.name}")
     except NotFound:
-        print(f"Création du nouvel agent Conversational Analytics : {agent_name}")
+        print(f"Creating new Conversational Analytics Data Agent: {agent_name}")
         try:
             created = client.create_data_agent_sync(
                 request=gda.CreateDataAgentRequest(
@@ -160,15 +165,15 @@ def main() -> None:
                     data_agent=agent,
                 )
             )
-            print(f"Agent créé avec succès : {created.name}")
+            print(f"Data Agent created successfully: {created.name}")
         except AlreadyExists:
             updated = client.update_data_agent_sync(
-                request=gda.UpdateDataAgentRequest(data_agent=agent)
+                request=gda.UpdateDataAgentRequest(data_agent=agent, update_mask=update_mask)
             )
-            print(f"Agent mis à jour : {updated.name}")
+            print(f"Data Agent updated: {updated.name}")
 
     print(
-        f"\nURL Console BigQuery Studio (Conversational Analytics) :\n"
+        f"\nBigQuery Studio URL (Conversational Analytics):\n"
         f"https://console.cloud.google.com/bigquery/conversational-analytics?project={PROJECT_ID}"
     )
 

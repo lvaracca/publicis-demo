@@ -12,7 +12,7 @@
 
 WITH source_raw AS (
   SELECT
-    -- Column pruning explicite (jamais de SELECT * en production)
+    -- Explicit column pruning (never use SELECT * in production)
     report_date,
     client_id,
     account_id,
@@ -28,11 +28,11 @@ WITH source_raw AS (
     _ingested_at,
     _source_file
   FROM {{ source('bronze', 'brz_<SOURCE_NAME>') }}
-  WHERE report_date IS NOT NULL
+  WHERE report_date >= DATE('2020-01-01')
 ),
 
 deduplicated AS (
-  -- Déduplication stricte sur la clé naturelle avant Silver
+  -- Strict deduplication on the natural key before entering Silver
   SELECT *
   FROM source_raw
   QUALIFY ROW_NUMBER() OVER (

@@ -4,36 +4,36 @@ sources:
   - name: ref
     database: publicis-demo-515613
     schema: ref
-    description: "Référentiels canoniques versionnés Publicis Media France"
+    description: "Publicis Media France versioned canonical reference tables"
     tables:
       - name: ref_fx_rates
-        description: "Taux de change quotidiens vers EUR"
+        description: "Daily foreign exchange conversion rates to EUR"
       - name: ref_media_taxonomy
-        description: "Référentiel de taxonomie média (marques, objectifs, funnels)"
+        description: "Canonical media taxonomy reference (brands, objectives, funnels)"
       - name: ref_clients_rls
-        description: "Table de configuration Row-Level Security par client"
+        description: "Client-level Row-Level Security (RLS) configuration table"
 
   - name: bronze
     database: publicis-demo-515613
     schema: bronze
-    description: "Couche Bronze brute ingérée depuis Adverity (GCS -> BigQuery)"
+    description: "Raw Bronze layer ingested from Adverity (GCS -> BigQuery)"
     tables:
       - name: brz_meta_ads
-        description: "Données brutes Meta Ads (Facebook / Instagram)"
+        description: "Raw Meta Ads performance data (Facebook / Instagram)"
         loaded_at_field: _ingested_at
         freshness:
           warn_after: { count: 24, period: hour }
           error_after: { count: 48, period: hour }
           filter: "report_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)"
       - name: brz_tiktok_ads
-        description: "Données brutes TikTok Ads"
+        description: "Raw TikTok Ads performance data"
         loaded_at_field: _ingested_at
         freshness:
           warn_after: { count: 24, period: hour }
           error_after: { count: 48, period: hour }
           filter: "report_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)"
       - name: brz_snapchat_ads
-        description: "Données brutes Snapchat Ads (spend en micro-devises USD, swipes -> clicks)"
+        description: "Raw Snapchat Ads performance data (micro-USD spend, swipes -> clicks)"
         loaded_at_field: _ingested_at
         freshness:
           warn_after: { count: 24, period: hour }

@@ -28,7 +28,7 @@ provider "google" {
   region  = var.region
 }
 
-# GCS Landing Bucket (Adverity -> GCS) : UBLA + PAP + Lifecycle FinOps 90j -> Nearline
+# GCS Landing Bucket (Adverity -> GCS): UBLA + PAP + FinOps lifecycle (90d -> Nearline, 365d -> Delete)
 resource "google_storage_bucket" "landing" {
   name                        = "${var.project_id}-landing"
   location                    = var.region
@@ -37,7 +37,7 @@ resource "google_storage_bucket" "landing" {
   public_access_prevention    = "enforced"
 
   soft_delete_policy {
-    retention_duration_seconds = 604800 # 7 jours
+    retention_duration_seconds = 604800 # 7 days
   }
 
   lifecycle_rule {
@@ -61,16 +61,16 @@ resource "google_storage_bucket" "landing" {
   }
 }
 
-# Datasets BigQuery par couche Medallion
+# BigQuery datasets by Medallion layer
 locals {
   datasets = ["ref", "bronze", "silver", "gold", "dq_monitoring"]
 }
 
 resource "google_bigquery_dataset" "layers" {
-  for_each      = toset(local.datasets)
-  dataset_id    = each.key
-  location      = var.region
-  description   = "Publicis Media France Social Platform - ${each.key} layer"
+  for_each    = toset(local.datasets)
+  dataset_id  = each.key
+  location    = var.region
+  description = "Publicis Media France Social Platform - ${each.key} layer"
 
   labels = {
     env        = var.env
@@ -80,11 +80,11 @@ resource "google_bigquery_dataset" "layers" {
   }
 }
 
-# Keyless Least-Privilege Service Account pour l'Agent Talk-to-Data (Gold ONLY)
+# Keyless Least-Privilege Service Account for the Talk-to-Data Agent (Gold ONLY)
 resource "google_service_account" "talk_to_data_gold" {
   account_id   = "sa-talk-to-data-gold"
   display_name = "Publicis Talk-to-Data Agent (Gold Semantic Layer Only)"
-  description  = "Keyless SA: accès lecture seule sur gold uniquement. Aucun accès bronze/silver."
+  description  = "Keyless SA: read-only access on gold only. Zero access to bronze/silver."
 }
 
 resource "google_project_iam_member" "talk_to_data_job_user" {
@@ -99,7 +99,7 @@ resource "google_bigquery_dataset_iam_member" "talk_to_data_gold_viewer" {
   member     = "serviceAccount:${google_service_account.talk_to_data_gold.email}"
 }
 
-# Table-level viewer sur ref.ref_clients_rls uniquement (requis par BigQuery RLS subquery, zéro accès bronze/silver)
+# Table-level viewer on ref.ref_clients_rls only (required for BigQuery RLS subquery; zero bronze/silver access)
 resource "google_bigquery_table_iam_member" "talk_to_data_rls_lookup" {
   dataset_id = google_bigquery_dataset.layers["ref"].dataset_id
   table_id   = "ref_clients_rls"

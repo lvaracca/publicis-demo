@@ -8,7 +8,7 @@ dataProduct: dp_social_performance
 
 info:
   title: "Meta Ads Raw Ingestion Contract"
-  description: "Contrat d'ingestion Adverity -> GCS -> BigQuery Bronze pour Meta Ads (Facebook / Instagram)."
+  description: "Adverity -> GCS -> BigQuery Bronze ingestion contract for Meta Ads (Facebook / Instagram)."
   owner: "team-data-engineering@publicismedia.fr"
   steward: "paid-social-ops@publicismedia.fr"
   sourceSystem: "Adverity (Meta Marketing API)"

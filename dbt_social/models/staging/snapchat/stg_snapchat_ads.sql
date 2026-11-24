@@ -12,7 +12,7 @@
 
 WITH source_raw AS (
   SELECT
-    -- Column pruning explicite (protège Silver des ajouts additifs comme view_through_conversions)
+    -- Explicit column pruning (shields Silver from additive schema drift such as view_through_conversions)
     report_date,
     client_id,
     account_id,
@@ -36,7 +36,7 @@ WITH source_raw AS (
 ),
 
 deduplicated AS (
-  -- Déduplication stricte sur la clé naturelle (élimine les 3 doublons bruts du 2026-11-22)
+  -- Strict deduplication on natural key (removes the 3 raw duplicates from 2026-11-22)
   SELECT *
   FROM source_raw
   QUALIFY ROW_NUMBER() OVER (

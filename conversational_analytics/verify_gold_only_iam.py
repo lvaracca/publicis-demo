@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Preuve live (Acte 5) de la gouvernance & sécurité Publicis Media France :
-Impersonation KEYLESS (zéro clé JSON) du Service Account `sa-talk-to-data-gold` :
+Live proof (Act 5) of Publicis Media France security & governance controls:
+KEYLESS impersonation (zero JSON keys) of Service Account `sa-talk-to-data-gold`:
 
-  1. Lecture `gold.dp_social_performance`   -> AUTORISÉE + RLS active (voit uniquement `maison_eclat`, 0 ligne `autonova_fr`)
-  2. Lecture `silver.fct_social_performance_daily` -> BLOQUÉE (403 Access Denied)
-  3. Lecture `bronze.brz_snapchat_ads`      -> BLOQUÉE (403 Access Denied)
+  1. Read `gold.dp_social_performance`          -> ALLOWED + RLS enforced (sees `maison_eclat` ONLY, 0 `autonova_fr` rows)
+  2. Read `silver.fct_social_performance_daily` -> BLOCKED (403 Access Denied)
+  3. Read `bronze.brz_meta_ads`                 -> BLOCKED (403 Access Denied)
 """
 
 from __future__ import annotations
@@ -33,10 +33,10 @@ def main() -> None:
     )
     bq = bigquery.Client(project=PROJECT_ID, location=REGION, credentials=target_creds)
 
-    print(f"=== Vérification Keyless IAM + RLS en tant que {SA_EMAIL} ===\n")
+    print(f"=== Keyless IAM + RLS Verification as {SA_EMAIL} ===\n")
 
-    # Test 1 : Gold + RLS
-    print("1) Requête sur GOLD (`gold.dp_social_performance`) :")
+    # Test 1: Gold + RLS
+    print("1) Querying GOLD (`gold.dp_social_performance`):")
     q_gold = f"""
       SELECT
         client_id,
@@ -60,29 +60,29 @@ def main() -> None:
     )
     rows = list(bq.query(q_gold, job_config=job_cfg).result())
     clients_seen = sorted({r.client_id for r in rows})
-    print(f"   [OK] Accès autorisé. Clients visibles via RLS : {clients_seen}")
+    print(f"   [OK] Access allowed. Clients visible via RLS: {clients_seen}")
     for r in rows:
         print(f"        - {r.client_id:14s} | {r.platform:8s} | impr={r.impressions:9d} | clicks={r.clicks:7d} | CTR={r.ctr_pct:.2f}%")
-    assert clients_seen == ["maison_eclat"], f"RLS attendue maison_eclat uniquement, vu : {clients_seen}"
-    print("   [OK] Isolation client prouvée : 0 ligne d'autonova_fr visible !\n")
+    assert clients_seen == ["maison_eclat"], f"Expected RLS to expose maison_eclat only, got: {clients_seen}"
+    print("   [OK] Client isolation verified: 0 rows of autonova_fr visible!\n")
 
-    # Test 2 : Silver (doit être refusé)
-    print("2) Tentative de lecture sur SILVER (`silver.fct_social_performance_daily`) :")
+    # Test 2: Silver (must be denied)
+    print("2) Attempting read on SILVER (`silver.fct_social_performance_daily`):")
     try:
         list(bq.query(f"SELECT COUNT(*) FROM `{PROJECT_ID}.silver.fct_social_performance_daily`").result())
-        raise RuntimeError("ERREUR : l'agent ne devrait PAS pouvoir lire Silver !")
+        raise RuntimeError("ERROR: agent must NOT be able to read Silver!")
     except Forbidden as exc:
-        print(f"   [BLOQUÉ - 403 ATTENDU] {str(exc).splitlines()[0]}\n")
+        print(f"   [BLOCKED - EXPECTED 403] {str(exc).splitlines()[0]}\n")
 
-    # Test 3 : Bronze (doit être refusé)
-    print("3) Tentative de lecture sur BRONZE (`bronze.brz_meta_ads`) :")
+    # Test 3: Bronze (must be denied)
+    print("3) Attempting read on BRONZE (`bronze.brz_meta_ads`):")
     try:
         list(bq.query(f"SELECT COUNT(*) FROM `{PROJECT_ID}.bronze.brz_meta_ads` WHERE report_date = DATE('2026-11-23')").result())
-        raise RuntimeError("ERREUR : l'agent ne devrait PAS pouvoir lire Bronze !")
+        raise RuntimeError("ERROR: agent must NOT be able to read Bronze!")
     except Forbidden as exc:
-        print(f"   [BLOQUÉ - 403 ATTENDU] {str(exc).splitlines()[0]}\n")
+        print(f"   [BLOCKED - EXPECTED 403] {str(exc).splitlines()[0]}\n")
 
-    print("=== TOUS LES CONTRÔLES DE GOUVERNANCE ET SÉCURITÉ SONT VALIDÉS ===")
+    print("=== ALL GOVERNANCE & SECURITY CONTROLS VERIFIED ===")
 
 
 if __name__ == "__main__":

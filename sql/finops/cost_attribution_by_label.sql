@@ -1,5 +1,5 @@
--- FinOps & Gouvernance des coûts BigQuery par Client, Data Product et Agent
--- Exploite les labels obligatoires définis dans AGENTS.md (Terraform, dbt, Conversational Analytics)
+-- FinOps & BigQuery Cost Attribution by Client, Data Product, and Agent
+-- Uses mandatory labels enforced in AGENTS.md (Terraform, dbt, Conversational Analytics)
 
 SELECT
   DATE(creation_time) AS query_date,
@@ -10,7 +10,7 @@ SELECT
   COALESCE((SELECT value FROM UNNEST(labels) WHERE key = 'agent'), 'pipeline_or_bi') AS agent,
   COUNT(*) AS total_jobs,
   ROUND(SUM(total_bytes_billed) / POW(1024, 3), 4) AS total_gb_billed,
-  -- Estimation coût On-Demand (~$6.25 / TiB en europe-west1)
+  -- Estimated On-Demand cost (~$6.25 / TiB in europe-west1)
   ROUND((SUM(total_bytes_billed) / POW(1024, 4)) * 6.25, 6) AS estimated_cost_usd
 FROM `publicis-demo-515613`.`region-europe-west1`.INFORMATION_SCHEMA.JOBS_BY_PROJECT
 WHERE creation_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)

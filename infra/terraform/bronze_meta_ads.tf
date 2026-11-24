@@ -8,7 +8,7 @@ resource "google_bigquery_table" "brz_meta_ads" {
   time_partitioning {
     type          = "DAY"
     field         = "report_date"
-    expiration_ms = 63072000000 # 730 jours
+    expiration_ms = 63072000000 # 730 days
   }
 
   require_partition_filter = true

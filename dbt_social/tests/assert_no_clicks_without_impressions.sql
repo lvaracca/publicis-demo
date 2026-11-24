@@ -1,6 +1,6 @@
 {{ config(severity = 'warn') }}
 
--- Contrôle Data Quality : détecte les lignes incohérentes avec impressions = 0 et clicks > 0
+-- Data Quality Check: flags impossible metric rows where impressions = 0 and clicks > 0
 SELECT
   date_day,
   platform,

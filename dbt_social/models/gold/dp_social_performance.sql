@@ -22,11 +22,11 @@
 }}
 
 /*
-  Data Product Certifié Gold : dp_social_performance
-  - Exposition unique pour BI (Looker Studio / Power BI) et Agents (Conversational Analytics).
-  - Isolation client automatique par Row-Level Security (ref.ref_clients_rls).
-  - Règle sémantique KPI :
-      * CTR = SAFE_DIVIDE(SUM(clicks), SUM(impressions))  -- JAMAIS AVG(ctr)
+  Certified Gold Data Product: dp_social_performance
+  - Single serving table for BI (Looker Studio / Power BI) and AI Agents (Conversational Analytics).
+  - Automatic client isolation via Row-Level Security (ref.ref_clients_rls).
+  - Canonical KPI semantic rules:
+      * CTR = SAFE_DIVIDE(SUM(clicks), SUM(impressions))  -- NEVER AVG(ctr)
       * CPM = SAFE_DIVIDE(SUM(spend_eur), SUM(impressions)) * 1000
       * CPC = SAFE_DIVIDE(SUM(spend_eur), SUM(clicks))
 */

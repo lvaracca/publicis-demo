@@ -1,26 +1,26 @@
-# Template Terraform — Table BigQuery Bronze (Publicis Media France Paved Road)
-# Généré depuis contracts/<SOURCE_NAME>.contract.yaml
+# Terraform Template — BigQuery Bronze Table (Publicis Media France Paved Road)
+# Generated from contracts/<SOURCE_NAME>.contract.yaml
 
 resource "google_bigquery_table" "brz_<SOURCE_NAME>" {
   project    = var.project_id
-  dataset_id = google_bigquery_dataset.bronze.dataset_id
+  dataset_id = google_bigquery_dataset.layers["bronze"].dataset_id
   table_id   = "brz_<SOURCE_NAME>"
 
   description = "<SOURCE_TITLE> raw daily social performance ingested from Adverity GCS landing."
 
-  # FinOps : partitionnement obligatoire + filtre de partition forcé
+  # FinOps: mandatory daily partitioning + enforced partition filter
   time_partitioning {
     type          = "DAY"
     field         = "report_date"
-    expiration_ms = 63072000000 # 730 jours (2 ans)
+    expiration_ms = 63072000000 # 730 days (2 years)
   }
 
   require_partition_filter = true
 
-  # FinOps : clustering aligné sur les filtres client & campagne
+  # FinOps: clustering aligned with client & campaign filters
   clustering = ["client_id", "campaign_id"]
 
-  # Labels FinOps obligatoires (ventilation INFORMATION_SCHEMA.JOBS / Billing)
+  # Mandatory FinOps labels (INFORMATION_SCHEMA.JOBS / Billing attribution)
   labels = {
     env          = var.env
     domain       = "social"
@@ -30,6 +30,6 @@ resource "google_bigquery_table" "brz_<SOURCE_NAME>" {
   }
 
   schema = jsonencode([
-    # Colonnes générées depuis contracts/<SOURCE_NAME>.contract.yaml + métadonnées techniques (_ingested_at, _source_file)
+    # Columns generated from contracts/<SOURCE_NAME>.contract.yaml + technical metadata (_ingested_at, _source_file)
   ])
 }

@@ -1,5 +1,5 @@
--- Test de réconciliation financière Bronze <-> Silver (tolérance 0.05 EUR par plateforme)
--- Garantit qu'aucun euro n'est perdu ou dupliqué lors de la transformation Silver.
+-- Financial Reconciliation Test: Bronze <-> Silver EUR Spend (0.05 EUR tolerance per platform)
+-- Guarantees zero euro loss or duplication during Silver transformation.
 
 WITH bronze_meta AS (
   SELECT

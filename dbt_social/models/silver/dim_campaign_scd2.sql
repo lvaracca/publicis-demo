@@ -12,8 +12,8 @@
 }}
 
 /*
-  Dimension Campagne conforme en SCD Type 2 (Slowly Changing Dimension).
-  Historise automatiquement tout changement de nom, d'objectif ou de statut campagne.
+  Conformed Campaign Dimension in SCD Type 2 (Slowly Changing Dimension).
+  Automatically historizes any change in campaign name, objective, or status.
 */
 
 WITH daily_campaigns AS (

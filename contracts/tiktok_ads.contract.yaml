@@ -8,7 +8,7 @@ dataProduct: dp_social_performance
 
 info:
   title: "TikTok Ads Raw Ingestion Contract"
-  description: "Contrat d'ingestion Adverity -> GCS -> BigQuery Bronze pour TikTok Ads."
+  description: "Adverity -> GCS -> BigQuery Bronze ingestion contract for TikTok Ads."
   owner: "team-data-engineering@publicismedia.fr"
   steward: "paid-social-ops@publicismedia.fr"
   sourceSystem: "Adverity (TikTok Marketing API)"

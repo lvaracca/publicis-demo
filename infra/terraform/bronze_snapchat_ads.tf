@@ -1,4 +1,4 @@
-# Généré depuis contracts/snapchat_ads.contract.yaml (v1.0.0) via templates/bronze_table.tf.tmpl
+# Generated from contracts/snapchat_ads.contract.yaml (v1.1.0) via templates/bronze_table.tf.tmpl
 
 resource "google_bigquery_table" "brz_snapchat_ads" {
   project    = var.project_id
@@ -10,7 +10,7 @@ resource "google_bigquery_table" "brz_snapchat_ads" {
   time_partitioning {
     type          = "DAY"
     field         = "report_date"
-    expiration_ms = 63072000000 # 730 jours
+    expiration_ms = 63072000000 # 730 days
   }
 
   require_partition_filter = true

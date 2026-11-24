@@ -1,5 +1,5 @@
-# Isolation Client Automatique en Gold (Row-Level Security pilotée par ref.ref_clients_rls)
-# Un nouveau client s'ajoute par pure configuration dans ref.ref_clients_rls (zéro copier-coller).
+# Automatic Client Isolation in Gold (Row-Level Security driven by ref.ref_clients_rls)
+# Adding a new client is pure configuration in ref.ref_clients_rls (zero copy-paste).
 
 resource "google_bigquery_job" "apply_gold_rls" {
   job_id   = "apply_gold_rls_policy_v1"

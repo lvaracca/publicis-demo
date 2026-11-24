@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Générateur déterministe de données synthétiques pour la démo Publicis Media France.
-Projet GCP : publicis-demo-515613 (europe-west1)
+Deterministic synthetic data generator for the Publicis Media France demo.
+GCP Project: publicis-demo-515613 (europe-west1)
 
-Génère et charge dans BigQuery / GCS :
+Generates and loads into BigQuery / GCS:
   - ref.ref_fx_rates, ref.ref_media_taxonomy, ref.ref_clients_rls
-  - bronze.brz_meta_ads, bronze.brz_tiktok_ads (T0 : 90 jours, 2 clients pilotes)
-  - GCS landing CSVs Adverity Snapchat Ads :
-      * 2026-11-23/snapchat_ads_2026_11_23_sample.csv (J0 + 4 anomalies réalistes)
-      * 2026-11-24/snapchat_ads_2026_11_24_v2_drift.csv (J+1 : ajout colonne view_through_conversions)
-      * 2026-11-24/snapchat_ads_2026_11_24_v2_breaking.csv (J+1 variante breaking : swipes -> swipe_ups)
+  - bronze.brz_meta_ads, bronze.brz_tiktok_ads (T0: 90 days, 2 pilot clients)
+  - GCS Adverity landing CSVs for Snapchat Ads:
+      * 2026-11-23/snapchat_ads_2026_11_23_sample.csv (Day 0 + 4 realistic anomalies)
+      * 2026-11-24/snapchat_ads_2026_11_24_v2_drift.csv (Day+1: additive column view_through_conversions)
+      * 2026-11-24/snapchat_ads_2026_11_24_v2_breaking.csv (Day+1 breaking variant: swipes -> swipe_ups)
 """
 
 from __future__ import annotations
@@ -29,8 +29,8 @@ BUCKET_NAME = f"{PROJECT_ID}-landing"
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 END_DATE = dt.date(2026, 11, 23)
-START_DATE = END_DATE - dt.timedelta(days=89)  # 90 jours
-SNAP_START_DATE = END_DATE - dt.timedelta(days=29)  # 30 jours
+START_DATE = END_DATE - dt.timedelta(days=89)  # 90 days
+SNAP_START_DATE = END_DATE - dt.timedelta(days=29)  # 30 days
 INGESTED_AT = "2026-11-23T06:30:00Z"
 
 CLIENTS = {
@@ -73,10 +73,10 @@ def generate_ref_tables(rng: random.Random) -> dict[str, tuple[list[str], list[d
         d += dt.timedelta(days=1)
 
     taxonomy_rows = [
-        {"taxonomy_type": "BRAND", "code": "SERUM", "label": "Éclat Sérum Anti-Âge", "client_id": "maison_eclat"},
+        {"taxonomy_type": "BRAND", "code": "SERUM", "label": "Éclat Anti-Aging Serum", "client_id": "maison_eclat"},
         {"taxonomy_type": "BRAND", "code": "PARFUM", "label": "Éclat Eau de Parfum", "client_id": "maison_eclat"},
-        {"taxonomy_type": "BRAND", "code": "HYBRID", "label": "AutoNova Hybride Urbain", "client_id": "autonova_fr"},
-        {"taxonomy_type": "BRAND", "code": "SUVEV", "label": "AutoNova SUV 100% Électrique", "client_id": "autonova_fr"},
+        {"taxonomy_type": "BRAND", "code": "HYBRID", "label": "AutoNova Urban Hybrid", "client_id": "autonova_fr"},
+        {"taxonomy_type": "BRAND", "code": "SUVEV", "label": "AutoNova Full-Electric SUV", "client_id": "autonova_fr"},
         {"taxonomy_type": "OBJECTIVE", "code": "AWR", "label": "Awareness", "client_id": "ALL"},
         {"taxonomy_type": "OBJECTIVE", "code": "TRAF", "label": "Traffic", "client_id": "ALL"},
         {"taxonomy_type": "OBJECTIVE", "code": "CONV", "label": "Conversion", "client_id": "ALL"},
@@ -157,7 +157,7 @@ def generate_meta_and_tiktok(rng: random.Random) -> tuple[list[dict[str, Any]], 
                     # --- META ADS ---
                     m_acc_id, m_acc_name = cfg["meta_acc"]
                     m_camp_id = f"camp_meta_{cfg['code'].lower()}_{b_idx}{o_idx}"
-                    # Historique SCD2 existant sur Meta pour maison_eclat camp 11 (bascule le 1er nov)
+                    # Existing SCD2 history on Meta for maison_eclat camp 11 (switched on Nov 1)
                     if client_id == "maison_eclat" and b_idx == 1 and o_idx == 1 and d >= dt.date(2026, 11, 1):
                         m_camp_name = f"FR_{cfg['code']}_{brand}_TRAF_MID_2026"
                         m_obj = "TRAFFIC"
@@ -231,13 +231,12 @@ def generate_meta_and_tiktok(rng: random.Random) -> tuple[list[dict[str, Any]], 
 
 def generate_snapchat_csvs(rng: random.Random) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     """
-    Génère les fichiers Adverity Snapchat Ads (J0 + J+1 drift non-breaking + J+1 drift breaking).
-    Inclut les 4 anomalies pédagogiques documentées dans le scénario de démo.
+    Generates Adverity Snapchat Ads CSVs (Day 0 + Day+1 additive drift + Day+1 breaking drift).
+    Includes the 4 intentional anomalies used across Acts 1-4.
     """
     j0_rows: list[dict[str, Any]] = []
 
     snap_specs = [
-        # (client_id, camp_id, brand, obj_code, funnel, obj_full, base_ctr, base_cpm_usd)
         ("maison_eclat", "camp_snap_eclat_01", "SERUM", "AWR", "UPPER", "AWARENESS", 0.024, 9.5),
         ("maison_eclat", "camp_snap_eclat_02", "PARFUM", "AWR", "UPPER", "AWARENESS", 0.014, 7.0),
         ("maison_eclat", "camp_snap_eclat_03", "SERUM", "CONV", "LOWER", "CONVERSION", 0.028, 12.0),
@@ -254,11 +253,11 @@ def generate_snapchat_csvs(rng: random.Random) -> tuple[list[dict[str, Any]], li
             cfg = CLIENTS[client_id]
             acc_id, acc_name = cfg["snap_acc"]
 
-            # ANOMALIE 2 (SCD2) : camp_snap_eclat_01 bascule le 18 nov de AWARENESS -> CONVERSION
+            # ANOMALY 2 (SCD2): camp_snap_eclat_01 switches on Nov 18 from AWARENESS -> CONVERSION
             if camp_id == "camp_snap_eclat_01" and d >= dt.date(2026, 11, 18):
                 camp_name = "FR_ECLAT_SERUM_CONV_LOWER_2026"
                 camp_obj = "CONVERSION"
-            # ANOMALIE 3 (Taxonomie malformée) : camp_snap_eclat_04 ne respecte pas les 6 segments
+            # ANOMALY 3 (Malformed taxonomy): camp_snap_eclat_04 has 4 tokens instead of 6
             elif camp_id == "camp_snap_eclat_04":
                 camp_name = "FR_ECLAT_TEST_NO_TAXO"
                 camp_obj = obj_full
@@ -272,9 +271,9 @@ def generate_snapchat_csvs(rng: random.Random) -> tuple[list[dict[str, Any]], li
                 impr = rng.randint(14000, 34000)
                 ctr = max(0.006, base_ctr * rng.uniform(0.92, 1.08))
 
-                # ANOMALIE 4b (Story Acte 4 - Baisse de CTR ~20% le 2026-11-23 pour maison_eclat) :
-                # Le 23/11, explosion d'impressions broad upper-funnel sur camp_snap_eclat_02 (CTR bas 0.85%)
-                # et réduction du retargeting lower-funnel sur camp_snap_eclat_03
+                # ANOMALY 4b (Act 4 Story - CTR drop on 2026-11-23 for maison_eclat):
+                # Broad upper-funnel impressions surge x2.6 on camp_snap_eclat_02 (0.85% CTR)
+                # while lower-funnel retargeting volume drops on camp_snap_eclat_03
                 if d == END_DATE and client_id == "maison_eclat":
                     if camp_id == "camp_snap_eclat_02":
                         impr = int(impr * 2.6)
@@ -309,12 +308,12 @@ def generate_snapchat_csvs(rng: random.Random) -> tuple[list[dict[str, Any]], li
                 j0_rows.append(row)
         d += dt.timedelta(days=1)
 
-    # ANOMALIE 1 (3 doublons exacts sur le 2026-11-22)
+    # ANOMALY 1 (3 exact duplicates on 2026-11-22)
     dup_candidates = [r for r in j0_rows if r["report_date"] == "2026-11-22"][:3]
     for dup in dup_candidates:
         j0_rows.append(dict(dup))
 
-    # ANOMALIE 4a (2 lignes incohérentes : impressions = 0 mais swipes > 0 le 2026-11-21)
+    # ANOMALY 4a (2 impossible metric rows: impressions = 0 and swipes > 0 on 2026-11-21)
     j0_rows.append({
         "report_date": "2026-11-21",
         "client_id": "maison_eclat",
@@ -352,7 +351,7 @@ def generate_snapchat_csvs(rng: random.Random) -> tuple[list[dict[str, Any]], li
         "purchases": 0,
     })
 
-    # J+1 (2026-11-24) : Schema Drift non-breaking (+ view_through_conversions)
+    # Day+1 (2026-11-24): Non-breaking additive schema drift (+ view_through_conversions)
     j1_date = (END_DATE + dt.timedelta(days=1)).isoformat()
     j1_drift_rows: list[dict[str, Any]] = []
     j1_breaking_rows: list[dict[str, Any]] = []
@@ -428,9 +427,9 @@ def main() -> None:
     bq = bigquery.Client(project=PROJECT_ID, location=REGION)
     gcs = storage.Client(project=PROJECT_ID)
 
-    print(f"=== Génération des données Publicis Media France ({PROJECT_ID} / {REGION}) ===")
+    print(f"=== Generating Publicis Media France demo data ({PROJECT_ID} / {REGION}) ===")
 
-    # 1. Référentiels
+    # 1. Reference tables
     refs = generate_ref_tables(rng)
     ref_schemas = {
         "ref_fx_rates": [
@@ -457,11 +456,11 @@ def main() -> None:
         n = load_bq_table(
             bq, "ref", name, p, ref_schemas[name],
             labels={"env": "dev", "domain": "social", "layer": "ref", "managed_by": "terraform"},
-            description=f"Référentiel canonique Publicis Media France - {name}",
+            description=f"Publicis Media France canonical reference table - {name}",
         )
-        print(f"  [BQ] ref.{name}: {n} lignes")
+        print(f"  [BQ] ref.{name}: {n} rows")
 
-    # 2. Bronze T0 : Meta Ads & TikTok Ads
+    # 2. Bronze T0: Meta Ads & TikTok Ads
     meta_rows, tiktok_rows = generate_meta_and_tiktok(rng)
 
     meta_fields = [
@@ -500,7 +499,7 @@ def main() -> None:
         labels={"env": "dev", "domain": "social", "source": "meta_ads", "data_product": "ingestion_meta_ads", "managed_by": "terraform"},
         description="Meta Ads raw daily social performance ingested from Adverity GCS landing.",
     )
-    print(f"  [BQ] bronze.brz_meta_ads: {n_meta} lignes (partitionné report_date, clusterisé client_id/campaign_id)")
+    print(f"  [BQ] bronze.brz_meta_ads: {n_meta} rows (partitioned report_date, clustered client_id/campaign_id)")
 
     tiktok_fields = [
         "report_date", "client_id", "account_id", "account_name", "campaign_id",
@@ -538,9 +537,9 @@ def main() -> None:
         labels={"env": "dev", "domain": "social", "source": "tiktok_ads", "data_product": "ingestion_tiktok_ads", "managed_by": "terraform"},
         description="TikTok Ads raw daily social performance ingested from Adverity GCS landing.",
     )
-    print(f"  [BQ] bronze.brz_tiktok_ads: {n_tt} lignes (partitionné report_date, clusterisé client_id/campaign_id)")
+    print(f"  [BQ] bronze.brz_tiktok_ads: {n_tt} rows (partitioned report_date, clustered client_id/campaign_id)")
 
-    # 3. GCS Landing : Snapchat Ads J0 + J+1 (Schema Drift)
+    # 3. GCS Landing: Snapchat Ads Day 0 + Day+1 (Schema Drift)
     j0_rows, j1_drift_rows, j1_breaking_rows = generate_snapchat_csvs(rng)
 
     snap_j0_fields = [
@@ -551,21 +550,21 @@ def main() -> None:
     snap_j0_local = DATA_DIR / "snapchat_ads_2026_11_23_sample.csv"
     write_csv(snap_j0_local, snap_j0_fields, j0_rows)
     uri_j0 = upload_to_gcs(gcs, snap_j0_local, "adverity/snapchat_ads/2026-11-23/snapchat_ads_2026_11_23_sample.csv")
-    print(f"  [GCS] {uri_j0} ({len(j0_rows)} lignes)")
+    print(f"  [GCS] {uri_j0} ({len(j0_rows)} rows)")
 
     snap_j1_drift_fields = snap_j0_fields + ["view_through_conversions"]
     snap_j1_drift_local = DATA_DIR / "snapchat_ads_2026_11_24_v2_drift.csv"
     write_csv(snap_j1_drift_local, snap_j1_drift_fields, j1_drift_rows)
     uri_j1_drift = upload_to_gcs(gcs, snap_j1_drift_local, "adverity/snapchat_ads/2026-11-24/snapchat_ads_2026_11_24_v2_drift.csv")
-    print(f"  [GCS] {uri_j1_drift} ({len(j1_drift_rows)} lignes — additive drift +view_through_conversions)")
+    print(f"  [GCS] {uri_j1_drift} ({len(j1_drift_rows)} rows — additive drift +view_through_conversions)")
 
     snap_j1_break_fields = [f if f != "swipes" else "swipe_ups" for f in snap_j1_drift_fields]
     snap_j1_break_local = DATA_DIR / "snapchat_ads_2026_11_24_v2_breaking.csv"
     write_csv(snap_j1_break_local, snap_j1_break_fields, j1_breaking_rows)
     uri_j1_break = upload_to_gcs(gcs, snap_j1_break_local, "adverity/snapchat_ads/2026-11-24/snapchat_ads_2026_11_24_v2_breaking.csv")
-    print(f"  [GCS] {uri_j1_break} ({len(j1_breaking_rows)} lignes — breaking drift swipes->swipe_ups)")
+    print(f"  [GCS] {uri_j1_break} ({len(j1_breaking_rows)} rows — breaking drift swipes->swipe_ups)")
 
-    print("=== Génération terminée avec succès ! ===")
+    print("=== Data generation completed successfully! ===")
 
 
 if __name__ == "__main__":
